@@ -1,44 +1,88 @@
 import numpy as np
-import torch
 
 from climatehack import BaseEvaluator
-from optical_flow_model import get_flow_images
+from model import Model
+from model import Model2
+from model import Model3
+from model import Model4
+from model import Model5
+from model import Model6
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print("Running on: {}".format(str(device).upper())) #For Debugging
 
 class Evaluator(BaseEvaluator):
-    def setup(self):
-        """Sets up anything required for evaluation.
-
-        In this case, it loads the trained model (in evaluation mode)."""
-        if not torch.cuda.is_available():
-            print("Warning: If you are running this on a CPU it could take a very long time.")
 
     def predict(self, coordinates: np.ndarray, data: np.ndarray) -> np.ndarray:
-        """Makes a prediction for the next two hours of satellite imagery.
-
-        Args:
-            coordinates (np.ndarray): the OSGB x and y coordinates (2, 128, 128)
-            data (np.ndarray): an array of 12 128*128 satellite images (12, 128, 128)
-
-        Returns:
-            np.ndarray: an array of 24 64*64 satellite image predictions (24, 64, 64)
-        """
-
-        assert coordinates.shape == (2, 128, 128)
         assert data.shape == (12, 128, 128)
-        data /= 1023.0
-        prediction = get_flow_images(data)
-        prediction *= 1023
-
-        prediction = prediction.cpu().detach().numpy()            
-            
-        prediction = prediction.astype(np.float32)
         
-        assert prediction.shape == (24, 64, 64)
+        model = Model(data)
+        prediction = model.generate()
+        data = np.vstack((data, prediction))
+        del prediction
+
+        
+        model = Model2(data)
+        prediction = model.generate()
+        data = np.vstack((data, prediction))
+        del prediction
+        
+
+        model = Model3(data)
+        prediction = model.generate()
+        avg1 = prediction.mean(1, keepdims=1)
+        prediction1 = np.broadcast_to(avg1, prediction.shape)
+        avg2 = prediction.mean(-1, keepdims=1)
+        prediction2 = np.broadcast_to(avg2, prediction.shape)
+        prediction = np.mean( np.array([prediction1,prediction2]), axis=0)
+        data = np.vstack((data, prediction))
+        del prediction
+        del prediction1
+        del prediction2
+
+
+        model = Model4(data)
+        prediction = model.generate()
+        avg1 = prediction.mean(1, keepdims=1)
+        prediction1 = np.broadcast_to(avg1, prediction.shape)
+        avg2 = prediction.mean(-1, keepdims=1)
+        prediction2 = np.broadcast_to(avg2, prediction.shape)
+        prediction = np.mean( np.array([prediction1,prediction2]), axis=0)
+        data = np.vstack((data, prediction))
+        del prediction
+        del prediction1
+        del prediction2
+        
+
+        model = Model5(data)
+        prediction = model.generate()
+        avg1 = prediction.mean(1, keepdims=1)
+        prediction1 = np.broadcast_to(avg1, prediction.shape)
+        avg2 = prediction.mean(-1, keepdims=1)
+        prediction2 = np.broadcast_to(avg2, prediction.shape)
+        prediction = np.mean( np.array([prediction1,prediction2]), axis=0)
+        data = np.vstack((data, prediction))
+        del prediction
+        del prediction1
+        del prediction2
+
+        model = Model6(data)
+        prediction = model.generate()
+        avg1 = prediction.mean(1, keepdims=1)
+        prediction1 = np.broadcast_to(avg1, prediction.shape)
+        avg2 = prediction.mean(-1, keepdims=1)
+        prediction2 = np.broadcast_to(avg2, prediction.shape)
+        prediction = np.mean(np.array([prediction1,prediction2]), axis=0)
+        data = np.vstack((data, prediction))
+        del prediction
+        del prediction1
+        del prediction2
+
+        output = data[12:, 32:96, 32:96]
+
+        assert output.shape == (24, 64, 64)
+
+        return output
     
-        return prediction
+    
 
 
 def main():
